@@ -20,6 +20,42 @@ const formatDate = function (date) {
 };
 formatDate(new Date());
 
+class Workout {
+  date = new Date();
+  id = String(Date.now()).slice(-10);
+
+  constructor(coords, distance, duration) {
+    this.coords = coords;
+    this.distance = distance; // in km
+    this.duration = duration; // in minutes
+  }
+}
+
+class Running extends Workout {
+  constructor(coords, distance, duration, cadence) {
+    super(coords, distance, duration);
+    this.cadence = cadence;
+    this.calcPace();
+  }
+
+  calcPace() {
+    this.pace = this.duration / this.distance;
+    return this.pace;
+  }
+}
+
+class Cycling extends Workout {
+  constructor(coords, distance, duration, elevationGain) {
+    super(coords, distance, duration);
+    this.elevationGain = elevationGain;
+    this.calcSpeed();
+  }
+  calcSpeed() {
+    this.speed = this.distance / (this.duration / 60);
+    return this.speed;
+  }
+}
+
 class App {
   #map;
   #mapEvent;
@@ -88,7 +124,6 @@ class App {
       inputElevation.value =
         '';
 
-    console.log(mapEvent);
     // Get coordinates
     const { lat, lng } = this.#mapEvent.latlng;
     const newCoords = [lat, lng];
@@ -106,7 +141,6 @@ class App {
         }).setContent('Workout')
       )
       .openPopup();
-    console.log('even still works');
   }
 }
 const app = new App();
