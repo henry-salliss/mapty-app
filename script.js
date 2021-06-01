@@ -1,8 +1,5 @@
 'use strict';
 
-// prettier-ignore
-const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
 const form = document.querySelector('.form');
 const containerWorkouts = document.querySelector('.workouts');
 const inputType = document.querySelector('.form__input--type');
@@ -26,7 +23,7 @@ class Workout {
 
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${
       months[this.date.getMonth()]
-    }${this.date.getDate()}`;
+    } ${this.date.getDate()}`;
   }
 }
 
@@ -65,9 +62,16 @@ class App {
   #workouts = [];
 
   constructor() {
+    // get position
     this._getPosition();
+
+    // get local storage
+    this._getLocalStorage();
+
+    // event listeners
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
+    containerWorkouts.addEventListener('click', this._moveToMarker.bind(this));
   }
 
   _getPosition() {
@@ -99,6 +103,10 @@ class App {
       .openPopup();
 
     this.#map.on('click', this._showForm.bind(this));
+
+    this.#workouts.forEach(wrk => {
+      this._createNewMarker(wrk);
+    });
   }
 
   _showForm(mapE) {
@@ -159,15 +167,45 @@ class App {
       this.#workouts.push(workout);
     }
 
-    console.log(this.#workouts);
     // hide form + clear inputs
+    this._hideForm();
+
+    // add marker
+    this._createNewMarker(workout);
+
+    // render workout on form
+    this._renderWorkout(workout);
+
+    // set local storage
+    this._setLocalStorage();
+  }
+
+  _setLocalStorage() {
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+  }
+
+  _getLocalStorage() {
+    const data = JSON.parse(localStorage.getItem('workouts'));
+
+    if (!data) return;
+
+    this.#workouts = data;
+    this.#workouts.forEach(wrk => {
+      this._renderWorkout(wrk);
+    });
+  }
+
+  _hideForm() {
     inputDistance.value =
       inputCadence.value =
       inputDuration.value =
       inputElevation.value =
         '';
-    console.log(workout);
-    this._createNewMarker(workout);
+    form.style.display = 'none';
+    form.classList.add('hidden');
+    setTimeout(function () {
+      form.style.display = 'grid';
+    }, 1000);
   }
 
   _createNewMarker(workout) {
@@ -181,9 +219,30 @@ class App {
           autoClose: false,
           closeOnClick: false,
           className: `${workout.type}-popup`,
-        }).setContent('Workout')
+        }).setContent(
+          `${workout.type === 'running' ? '🏃‍♂' : '🚴‍♀'} ${
+            workout.description
+          }`
+        )
       )
       .openPopup();
+  }
+
+  _moveToMarker(e) {
+    const workoutElement = e.target.closest('.workout');
+
+    if (!workoutElement) return;
+
+    const workout = this.#workouts.find(
+      workout => workout.id === workoutElement.dataset.id
+    );
+
+    this.#map.setView(workout.coords, 13, {
+      animate: true,
+      pan: {
+        duration: 1,
+      },
+    });
   }
 
   _renderWorkout(workout) {
@@ -230,6 +289,7 @@ class App {
               <span class="workout__unit">m</span> 
             </div>`;
     }
+    form.insertAdjacentHTML('afterend', html);
   }
 }
 
